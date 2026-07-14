@@ -13,7 +13,7 @@
   },
   "statements": [
     {
-      "comment": "Change the \u0027assign\u0027 statement to match your required \u0027original\u0027 and \u0027replacement\u0027 strings.",
+      "comment": "Change the 'assign' statement to match your required 'original' and 'replacement' strings.",
       "index": 1,
       "enabled": true,
       "elementType": "ZestComment"
@@ -46,7 +46,7 @@
           "replacement": "",
           "regex": true,
           "caseExact": false,
-          "variableName": "request.header",
+          "variableName": "response.header",
           "index": 5,
           "enabled": true,
           "elementType": "ZestAssignReplace"

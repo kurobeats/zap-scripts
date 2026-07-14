@@ -1,19 +1,24 @@
 """
-ZAP Script: Ask Ollama Enhanced (Standalone)
+ZAP Script: Ask AI Enhanced (Standalone)
 Type: Standalone
-Description: Enhanced AI assistant with streaming, multi-model comparison, auto-triage,
-             CWE mapping, report generation, and executive summaries.
+Description: Enhanced AI assistant with provider selection (Ollama/OpenRouter), streaming,
+             multi-model comparison, auto-triage, CWE mapping, report generation, and
+             executive summaries.
 
-Depends on: ollama_common_enhanced.py in same directory.
+Depends on: ai_common.py, ai_common_enhanced.py in same directory.
 """
 import sys, os
 sys.path.append(os.path.dirname(__file__))
 
-from ollama_common_enhanced import (
+from ai_common import (
     chat, list_models, health_check, format_error, truncate, extract_http_requests,
+    AiConfig, ChatResult, AiException,
+    OLLAMA_BASE_URL, OPENROUTER_BASE_URL, DEFAULT_SERVICE, DEFAULT_MODEL,
+    DEFAULT_TIMEOUT, DEFAULT_NUM_CTX
+)
+from ai_common_enhanced import (
     MultiModelChat, ModelRegistry, PROMPT_TEMPLATES, list_templates,
-    auto_triage, map_cwe, generate_report, executive_summary,
-    DEFAULT_BASE_URL, DEFAULT_MODEL, DEFAULT_TIMEOUT, DEFAULT_NUM_CTX, OllamaException
+    auto_triage, map_cwe, generate_report, executive_summary
 )
 from javax.swing import (
     JPanel, JFrame, JTextArea, JButton, JComboBox, JLabel, JScrollPane,
@@ -36,55 +41,99 @@ import threading
 # ---- Config helpers ----
 def _cfg(key, default):
     try:
-        val = ScriptVars.getGlobalVar(key)
+        val = ScriptVars.getGlobalVar("ai_enh.{}".format(key))
         return val if val else default
     except:
         return default
 
 def _set_cfg(key, value):
     try:
-        ScriptVars.setGlobalVar(key, str(value))
+        ScriptVars.setGlobalVar("ai_enh.{}".format(key), str(value))
     except:
         pass
 
 # ---- Main Panel ----
-class EnhancedOllamaPanel(JPanel):
+class EnhancedAiPanel(JPanel):
     def __init__(self):
         JPanel.__init__(self, BorderLayout())
-        self.base_url = _cfg("ollama_enh.base_url", DEFAULT_BASE_URL)
-        self.model = _cfg("ollama_enh.model", DEFAULT_MODEL)
-        self.timeout = int(_cfg("ollama_enh.timeout", str(DEFAULT_TIMEOUT)))
-        self.num_ctx = int(_cfg("ollama_enh.num_ctx", str(DEFAULT_NUM_CTX)))
-        self.streaming = _cfg("ollama_enh.streaming", "true") == "true"
-
-        self.registry = ModelRegistry(self.base_url)
-        self.multi_model = MultiModelChat(self.base_url, self.timeout)
+        svc = _cfg("service", DEFAULT_SERVICE)
+        self.config = AiConfig(
+            service=svc,
+            base_url=_cfg("base_url", OLLAMA_BASE_URL if svc == "ollama" else OPENROUTER_BASE_URL),
+            api_key=_cfg("api_key", ""),
+            model=_cfg("model", DEFAULT_MODEL),
+            timeout=int(_cfg("timeout", str(DEFAULT_TIMEOUT))),
+            num_ctx=int(_cfg("num_ctx", str(DEFAULT_NUM_CTX))),
+        )
+        self.streaming = _cfg("streaming", "true") == "true"
+        self.registry = ModelRegistry(self.config)
+        self.multi_model = MultiModelChat(self.config)
         self._conversation = []
-        self._collected_findings = []  # For report generation
-
+        self._collected_findings = []
         self._build_ui()
         self._refresh_models()
 
     def _build_ui(self):
         self.setBorder(EmptyBorder(10, 10, 10, 10))
         tabs = JTabbedPane()
-
-        # ---- Tab 1: Chat ----
         tabs.addTab("Chat", self._build_chat_tab())
-        # ---- Tab 2: Compare models ----
         tabs.addTab("Compare Models", self._build_compare_tab())
-        # ---- Tab 3: Auto-Triage ----
         tabs.addTab("Auto-Triage", self._build_triage_tab())
-        # ---- Tab 4: Report ----
         tabs.addTab("Report", self._build_report_tab())
-
         self.add(tabs, BorderLayout.CENTER)
+
+    # ==== Config bar (shared across tabs) ====
+    def _build_config_bar(self):
+        bar = JPanel(FlowLayout(FlowLayout.LEFT, 6, 2))
+        bar.add(JLabel("Service:"))
+        self.service_combo = JComboBox(["ollama", "openrouter"])
+        self.service_combo.setSelectedItem(self.config.service)
+        self.service_combo.setPreferredSize(Dimension(100, 22))
+        self.service_combo.addActionListener(lambda e: self._on_config_change())
+        bar.add(self.service_combo)
+
+        self.api_key_label = JLabel("Key:")
+        self.api_key_field = JTextField(15)
+        self.api_key_field.setText(self.config.api_key)
+        bar.add(self.api_key_label)
+        bar.add(self.api_key_field)
+        return bar
+
+    def _on_config_change(self):
+        svc = str(self.service_combo.getSelectedItem())
+        self.api_key_label.setVisible(svc == "openrouter")
+        self.api_key_field.setVisible(svc == "openrouter")
+        self._save_service_config()
+
+    def _save_service_config(self):
+        cfg = self._gather_config()
+        if cfg:
+            self.config = cfg
+            self.registry.config = cfg
+            self.multi_model.config = cfg
+            _set_cfg("service", cfg.service)
+            _set_cfg("base_url", cfg.base_url)
+            if cfg.api_key:
+                _set_cfg("api_key", cfg.api_key)
+
+    def _gather_config(self):
+        svc = str(self.service_combo.getSelectedItem())
+        key = self.api_key_field.text.strip()
+        model = self._get_model()
+        if svc == "openrouter" and not key:
+            return None
+        return AiConfig(
+            service=svc,
+            api_key=key,
+            model=model,
+            timeout=self.config.timeout,
+            num_ctx=self.config.num_ctx
+        )
 
     # ==== Chat Tab ====
     def _build_chat_tab(self):
         panel = JPanel(BorderLayout())
 
-        # Input
         self.prompt_area = JTextArea(4, 60)
         self.prompt_area.lineWrap = True
         self.prompt_area.wrapStyleWord = True
@@ -99,11 +148,10 @@ class EnhancedOllamaPanel(JPanel):
         toolbar.add(JLabel("Model:"))
         self.model_combo = JComboBox()
         self.model_combo.setEditable(True)
-        self.model_combo.addItem(self.model)
+        self.model_combo.addItem(self.config.model)
         self.model_combo.setPreferredSize(Dimension(200, 24))
         toolbar.add(self.model_combo)
 
-        # Prompt template selector
         toolbar.add(JLabel("Template:"))
         self.template_combo = JComboBox()
         for name, tmpl in sorted(PROMPT_TEMPLATES.items()):
@@ -115,14 +163,16 @@ class EnhancedOllamaPanel(JPanel):
         refresh_btn.addActionListener(lambda e: self._refresh_models())
         toolbar.add(refresh_btn)
 
+        # Config bar
+        config_bar = self._build_config_bar()
         self.streaming_cb = JCheckBox("Stream", self.streaming)
-        toolbar.add(self.streaming_cb)
+        config_bar.add(self.streaming_cb)
 
-        self.ask_btn = JButton("Ask Ollama")
+        self.ask_btn = JButton("Ask AI")
         self.ask_btn.addActionListener(lambda e: self._on_ask())
-        toolbar.add(self.ask_btn)
-
-        input_panel.add(toolbar, BorderLayout.SOUTH)
+        config_bar.add(self.ask_btn)
+        input_panel.add(config_bar, BorderLayout.SOUTH)
+        input_panel.add(toolbar, BorderLayout.NORTH)
 
         # Response
         response_panel = JPanel(BorderLayout())
@@ -131,7 +181,7 @@ class EnhancedOllamaPanel(JPanel):
 
         self.loading_panel = JPanel(FlowLayout(FlowLayout.LEFT))
         self.loading_panel.add(JProgressBar())
-        self.loading_panel.add(JLabel("Querying Ollama..."))
+        self.loading_panel.add(JLabel("Querying AI..."))
         self.loading_panel.setVisible(False)
         response_panel.add(self.loading_panel, BorderLayout.NORTH)
 
@@ -148,7 +198,6 @@ class EnhancedOllamaPanel(JPanel):
         actions.add(copy_btn)
 
         add_to_report_btn = JButton("Add to Report")
-        add_to_report_btn.setToolTipText("Add this analysis to collected findings for report generation")
         add_to_report_btn.addActionListener(lambda e: self._add_to_report())
         actions.add(add_to_report_btn)
 
@@ -161,7 +210,6 @@ class EnhancedOllamaPanel(JPanel):
         actions.add(clear_btn)
         response_panel.add(actions, BorderLayout.SOUTH)
 
-        # Follow-up
         followup_p = JPanel(FlowLayout(FlowLayout.LEFT, 8, 4))
         followup_p.add(JLabel("Follow-up:"))
         self.followup_field = JTextArea(1, 40)
@@ -178,12 +226,17 @@ class EnhancedOllamaPanel(JPanel):
         split.setResizeWeight(0.35)
         panel.add(split, BorderLayout.CENTER)
 
-        # Hotkeys
         self.prompt_area.getInputMap(JPanel.WHEN_FOCUSED).put(
             KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, KeyEvent.CTRL_MASK), "ask")
         self.prompt_area.getActionMap().put("ask", AbstractAction(actionPerformed=lambda e: self._on_ask()))
 
+        self._update_api_key_visibility()
         return panel
+
+    def _update_api_key_visibility(self):
+        svc = str(self.service_combo.getSelectedItem())
+        self.api_key_label.setVisible(svc == "openrouter")
+        self.api_key_field.setVisible(svc == "openrouter")
 
     # ==== Compare Tab ====
     def _build_compare_tab(self):
@@ -204,7 +257,6 @@ class EnhancedOllamaPanel(JPanel):
         self.compare_model_list.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION)
         self.compare_model_list.setVisibleRowCount(4)
         toolbar.add(JScrollPane(self.compare_model_list))
-
         compare_btn = JButton("Compare")
         compare_btn.addActionListener(lambda e: self._do_compare())
         toolbar.add(compare_btn)
@@ -238,11 +290,9 @@ class EnhancedOllamaPanel(JPanel):
         triage_btn = JButton("Auto-Triage")
         triage_btn.addActionListener(lambda e: self._do_triage())
         toolbar.add(triage_btn)
-
         cwe_btn = JButton("Map CWE")
         cwe_btn.addActionListener(lambda e: self._do_cwe())
         toolbar.add(cwe_btn)
-
         summary_btn = JButton("Executive Summary")
         summary_btn.addActionListener(lambda e: self._do_exec_summary())
         toolbar.add(summary_btn)
@@ -277,11 +327,9 @@ class EnhancedOllamaPanel(JPanel):
         toolbar.add(JLabel("Format:"))
         self.report_fmt = JComboBox(["markdown", "html"])
         toolbar.add(self.report_fmt)
-
         gen_btn = JButton("Generate Report")
         gen_btn.addActionListener(lambda e: self._do_report())
         toolbar.add(gen_btn)
-
         clear_findings_btn = JButton("Clear Findings")
         clear_findings_btn.addActionListener(lambda e: self._clear_findings())
         toolbar.add(clear_findings_btn)
@@ -303,11 +351,15 @@ class EnhancedOllamaPanel(JPanel):
     def _refresh_models(self):
         def run():
             try:
+                cfg = self._gather_config()
+                if not cfg:
+                    return
+                self.registry.config = cfg
                 models = self.registry.refresh()
                 SwingUtilities.invokeLater(lambda: self._update_model_ui(models))
             except Exception as e:
                 SwingUtilities.invokeLater(lambda: self.response_area.setText(
-                    format_error(e, self.base_url, self.model)))
+                    format_error(e, self._gather_config() or self.config)))
         threading.Thread(target=run, daemon=True).start()
 
     def _update_model_ui(self, models):
@@ -318,7 +370,6 @@ class EnhancedOllamaPanel(JPanel):
         for m in models:
             if m != str(current or '').strip():
                 self.model_combo.addItem(m)
-        # Update compare model list
         list_model = DefaultListModel()
         for m in models:
             list_model.addElement(m)
@@ -347,9 +398,15 @@ class EnhancedOllamaPanel(JPanel):
         self._do_chat(msg, is_followup=True)
 
     def _do_chat(self, user_msg, is_followup=False):
-        model = self._get_model() or self.model
+        self._save_service_config()
+        cfg = self._gather_config()
+        if not cfg:
+            JOptionPane.showMessageDialog(self, "OpenRouter requires an API key.")
+            return
+
+        model = self._get_model() or cfg.model
         template = self._get_template()
-        _set_cfg("ollama_enh.model", model)
+        _set_cfg("model", model)
 
         self.ask_btn.setEnabled(False)
         self.followup_btn.setEnabled(False)
@@ -367,22 +424,19 @@ class EnhancedOllamaPanel(JPanel):
                     buf = []
                     def on_chunk(chunk):
                         buf.append(chunk)
-                        def update():
-                            self.response_area.append(chunk)
-                        SwingUtilities.invokeLater(update)
-                    chat(model, template["system"], user_msg, self.base_url,
-                         self.timeout, self.num_ctx, stream=True, on_chunk=on_chunk)
+                        SwingUtilities.invokeLater(lambda: self.response_area.append(chunk))
+                    chat(model, template["system"], user_msg, config=cfg,
+                         stream=True, on_chunk=on_chunk)
                     self._conversation.append(("assistant", ''.join(buf)))
                 else:
-                    result = chat(model, template["system"], user_msg, self.base_url,
-                                  self.timeout, self.num_ctx, stream=False)
+                    result = chat(model, template["system"], user_msg, config=cfg)
                     def update():
                         self.response_area.text = result.content
                     SwingUtilities.invokeLater(update)
                     self._conversation.append(("assistant", result.content))
                 SwingUtilities.invokeLater(self._on_done)
             except Exception as e:
-                SwingUtilities.invokeLater(lambda: self._show_error(e, model))
+                SwingUtilities.invokeLater(lambda: self._show_error(e, cfg))
         threading.Thread(target=run, daemon=True).start()
 
     def _on_done(self):
@@ -391,11 +445,11 @@ class EnhancedOllamaPanel(JPanel):
         self.followup_btn.setEnabled(True)
         self.followup_field.text = ""
 
-    def _show_error(self, error, model):
+    def _show_error(self, error, cfg):
         self.loading_panel.setVisible(False)
         self.ask_btn.setEnabled(True)
         self.followup_btn.setEnabled(True)
-        self.response_area.text = format_error(error, self.base_url, model)
+        self.response_area.text = format_error(error, cfg)
 
     def _copy_response(self):
         text = self.response_area.text
@@ -415,10 +469,10 @@ class EnhancedOllamaPanel(JPanel):
     def _send_to_requester(self):
         requests = extract_http_requests(self.response_area.text)
         if not requests:
-            JOptionPane.showMessageDialog(self, "No HTTP requests found in response.")
+            JOptionPane.showMessageDialog(self, "No HTTP requests found.")
             return
         try:
-            from org.zaproxy.zap.extension.httppanel import HttpPanelRequest
+            from org.parosproxy.zap.extension.httppanel import HttpPanelRequest
             from org.parosproxy.paros.network import HttpRequestHeader
             extScript = Model.getSingleton().getExtensionLoader().getExtension(
                 org.zaproxy.zap.extension.httppanel.ExtensionHttpPanel)
@@ -446,7 +500,9 @@ class EnhancedOllamaPanel(JPanel):
 
         self.compare_results.text = "Comparing models...\n"
         def run():
-            results, errors = self.multi_model.compare(selected, "", prompt, self.num_ctx)
+            cfg = self._gather_config() or self.config
+            results, errors = self.multi_model.compare(selected, "", prompt,
+                                                        cfg.num_ctx, cfg.max_tokens)
             def update():
                 out = "# Model Comparison\n\n"
                 for model, result in sorted(results.items()):
@@ -465,7 +521,8 @@ class EnhancedOllamaPanel(JPanel):
         self.triage_results.text = "Triaging...\n"
         def run():
             try:
-                result = auto_triage(text, self._get_model(), self.base_url, self.timeout, self.num_ctx)
+                cfg = self._gather_config() or self.config
+                result = auto_triage(text, config=cfg)
                 out = "## Auto-Triage Results\n\n"
                 out += "- **Verdict:** {}\n".format(
                     "REAL vulnerability" if result.is_real else ("False Positive" if result.is_real is False else "Uncertain"))
@@ -474,7 +531,6 @@ class EnhancedOllamaPanel(JPanel):
                 out += "- **Severity:** {}\n".format(result.severity)
                 out += "- **Reasoning:** {}\n".format(result.reasoning[:300])
                 out += "- **Remediation:** {}\n".format(result.suggested_remediation[:300])
-                SwingUtilities.invokeLater(lambda: setattr(self, 'triage_results', type('',(),{'text':''})()))
                 self.triage_results.text = out
             except Exception as e:
                 self.triage_results.text = "Error: {}".format(str(e))
@@ -487,7 +543,8 @@ class EnhancedOllamaPanel(JPanel):
         self.triage_results.text = "Mapping CWE...\n"
         def run():
             try:
-                result = map_cwe(text, self._get_model(), self.base_url, self.timeout, self.num_ctx)
+                cfg = self._gather_config() or self.config
+                result = map_cwe(text, config=cfg)
                 out = "## CWE Mapping\n\n"
                 out += "- **Primary:** {} - {}\n".format(result["cwe_id"], result["cwe_name"])
                 if result["alternatives"]:
@@ -505,7 +562,8 @@ class EnhancedOllamaPanel(JPanel):
         self.triage_results.text = "Generating executive summary...\n"
         def run():
             try:
-                result = executive_summary(text, self._get_model(), self.base_url, self.timeout, self.num_ctx)
+                cfg = self._gather_config() or self.config
+                result = executive_summary(text, config=cfg)
                 self.triage_results.text = "## Executive Summary\n\n{}".format(result)
             except Exception as e:
                 self.triage_results.text = "Error: {}".format(str(e))
@@ -521,11 +579,11 @@ class EnhancedOllamaPanel(JPanel):
             return
 
         findings = []
-        # Parse collected findings — each "## Scanner Finding: ..." is a finding
         for section in text.split("\n## "):
             if not section.strip():
                 continue
-            finding = {"name": "Finding", "severity": "Medium", "url": "N/A", "description": section[:500], "cwe": "N/A"}
+            finding = {"name": "Finding", "severity": "Medium", "url": "N/A",
+                       "description": section[:500], "cwe": "N/A"}
             for line in section.split('\n'):
                 if line.startswith("## Scanner Finding:"):
                     finding["name"] = line.replace("## Scanner Finding:", "").strip()
@@ -539,9 +597,14 @@ class EnhancedOllamaPanel(JPanel):
         fmt = str(self.report_fmt.getSelectedItem())
         def run():
             try:
-                report = generate_report(findings if findings else [
-                    {"name": "Analysis", "severity": "N/A", "url": "", "description": text[:1000], "cwe": ""}
-                ], self._get_model(), self.base_url, self.timeout, self.num_ctx, fmt)
+                cfg = self._gather_config() or self.config
+                report = generate_report(
+                    findings if findings else [
+                        {"name": "Analysis", "severity": "N/A", "url": "",
+                         "description": text[:1000], "cwe": ""}
+                    ],
+                    config=cfg, report_format=fmt
+                )
                 self.report_output.text = report
             except Exception as e:
                 self.report_output.text = "Error: {}".format(str(e))
@@ -553,19 +616,19 @@ class EnhancedOllamaPanel(JPanel):
 
 
 # ---- Extension ----
-class EnhancedOllamaExtension(ExtensionAdaptor):
+class EnhancedAiExtension(ExtensionAdaptor):
     def getName(self):
-        return "AskOllamaEnhanced"
+        return "AskAiEnhanced"
 
     def getUIName(self):
-        return "Ask Ollama+"
+        return "Ask AI+"
 
     def getDescription(self):
         return "Enhanced AI-powered security analysis (multi-model, auto-triage, CWE mapping, reports)"
 
     def init(self):
         ExtensionAdaptor.init(self)
-        self.panel = EnhancedOllamaPanel()
+        self.panel = EnhancedAiPanel()
 
     def getMainPanel(self):
         return self.panel
@@ -573,11 +636,11 @@ class EnhancedOllamaExtension(ExtensionAdaptor):
 
 def install():
     try:
-        ext = EnhancedOllamaExtension()
+        ext = EnhancedAiExtension()
         Model.getSingleton().getExtensionLoader().addExtension(ext)
-        print("[Ask Ollama+] Enhanced extension loaded with streaming, multi-model, auto-triage, CWE mapping & reports.")
+        print("[Ask AI+] Enhanced extension loaded with streaming, multi-model, auto-triage, CWE mapping & reports.")
     except Exception as e:
-        print("[Ask Ollama+] Failed to load: {}".format(str(e)))
+        print("[Ask AI+] Failed to load: {}".format(str(e)))
 
 def uninstall():
-    print("[Ask Ollama+] Unloaded.")
+    print("[Ask AI+] Unloaded.")

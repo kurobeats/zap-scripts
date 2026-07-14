@@ -1,13 +1,11 @@
-// This script was lazily crafted by Anthony Cozamanis, kurobeats@yahoo.co.jp
-
+// Emulate Firefox desktop
+// crafted by Anthony Cozamanis, kurobeats@yahoo.co.jp
 function proxyRequest(msg) {
-	var ua
-	ua = 'Mozilla/5.0 (X11; Linux i686 on x86_64; rv:28.0) Gecko/20100101 Firefox/28.0'
+	const ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0'
 	msg.getRequestHeader().setHeader('User-Agent', ua)
 	return true
 }
 
 function proxyResponse(msg) {
-	// Leave the response alone
 	return true
 }
