@@ -1,3 +1,5 @@
+# Lazily crafted by Anthony Cozamanis - kurobeats@yahoo.co.jp
+
 """
 ZAP Script: AI Alert Enricher Enhanced
 Type: Alert Filter

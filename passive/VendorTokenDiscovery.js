@@ -1,3 +1,5 @@
+// Lazily crafted by Anthony Cozamanis - kurobeats@yahoo.co.jp
+
 // Additional vendor API tokens — format-anchored
 // Adapted from secretsifter Patterns.java — consolidated catch-all
 function scan(ps, msg, src)

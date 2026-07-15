@@ -1,3 +1,5 @@
+# Lazily crafted by Anthony Cozamanis - kurobeats@yahoo.co.jp
+
 """
 ZAP Script: AI Alert Enricher
 Type: Alert Filter (passive scan rule that enriches alerts with AI analysis)

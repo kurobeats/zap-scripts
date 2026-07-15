@@ -1,3 +1,5 @@
+# Lazily crafted by Anthony Cozamanis - kurobeats@yahoo.co.jp
+
 """
 ZAP Script: AI Session Helper
 Type: Session Management

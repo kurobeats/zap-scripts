@@ -1,3 +1,5 @@
+// Lazily crafted by Anthony Cozamanis - kurobeats@yahoo.co.jp
+
 // AI/ML platform API tokens — format-anchored, near-zero FP
 // Adapted from secretsifter Patterns.java
 function scan(ps, msg, src)

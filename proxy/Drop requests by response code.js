@@ -1,5 +1,4 @@
-// Drop responses with unwanted HTTP status codes
-// crafted by Anthony Cozamanis, kurobeats@yahoo.co.jp
+// Lazily crafted by Anthony Cozamanis - kurobeats@yahoo.co.jp
 function proxyRequest(msg) {
 	return true
 }

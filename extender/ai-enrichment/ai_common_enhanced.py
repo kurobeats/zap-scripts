@@ -1,3 +1,5 @@
+# Lazily crafted by Anthony Cozamanis - kurobeats@yahoo.co.jp
+
 """
 ai_common_enhanced.py — Enhanced shared module with advanced features:
   - Multi-model support with model registry

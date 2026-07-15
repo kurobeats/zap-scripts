@@ -1,3 +1,5 @@
+# Lazily crafted by Anthony Cozamanis - kurobeats@yahoo.co.jp
+
 """
 ai_common.py — Shared module for ZAP-AI scripts.
 Supports Ollama (local) and OpenRouter (cloud) providers.

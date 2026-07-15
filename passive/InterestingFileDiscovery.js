@@ -19,7 +19,7 @@ function scan(ps, msg, src)
         ps.raiseAlert(3, conf, alertTitle[idx], alertDesc[idx], url, '', '', found.toString(), alertSolution, '', 0, 0, msg)
     }
 
-    const interestingext = /(.*\.(pem|log|pkcs12|p12|pfx|asc|otr\.private_key|private_key|ovpn|cscfg|rdp|mdf|sdf|sqlite|sqlite3|bek|tpm|fve|jks|psafe3|rb|yml|py|agilekeychain|keychain|pcap|gnucash|xml|kwallet|php|tblk|plist|xpl|dayone|txt|terraform\.tfvars|exports|functions|extra|asa|inc|config|zip|tar|gz|tgz|rar|java|pdf|docx|doc|rtf|xlsx|xls|csv|pptx|ppt|bak|old|tmp|cer|crt|p7b|pkr|skr))/gi
+    const interestingext = /(\.(pem|log|pkcs12|p12|pfx|asc|ovpn|cscfg|rdp|mdf|sdf|sqlite|sqlite3|bek|tpm|fve|jks|psafe3|agilekeychain|keychain|pcap|gnucash|kwallet|tblk|plist|xpl|dayone|terraform\.tfvars|exports|functions|extra|asa|inc|zip|tar|gz|tgz|rar|bak|old|tmp|cer|crt|p7b|pkr|skr)\b)/gi
 
     // Run all regex checks
 

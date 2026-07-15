@@ -19,7 +19,9 @@ function scan(ps, msg, src)
         ps.raiseAlert(3, conf, alertTitle[idx], alertDesc[idx], url, '', '', found.toString(), alertSolution, '', 0, 0, msg)
     }
 
-    const privatesshkey = /(^.*_rsa|^.*_dsa|^.*_ed25519|^.*_ecdsa|-----BEGIN (EC|RSA|DSA|OPENSSH) PRIVATE KEY|PGP)/g
+    // ponytail: PEM headers are the anchor — filenames are secondary hints
+    // Covers RSA, DSA, ECDSA, Ed25519, ECDSA-SK, Ed25519-SK, XMSS, SSH2, PuTTY, PGP
+    const privatesshkey = /(-----BEGIN (EC|RSA|DSA|OPENSSH|SSH2 ENCRYPTED|PGP PRIVATE KEY BLOCK) PRIVATE KEY-----|\bgitlab_rsa\b|\.(pem|ppk|key)\b|\bid_(rsa|dsa|ecdsa[_-]?sk|ed25519[_-]?sk|xmss)\b)/g
 
     // Run all regex checks
 

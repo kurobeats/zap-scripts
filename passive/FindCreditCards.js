@@ -1,5 +1,5 @@
+// Lazily crafted by Anthony Cozamanis - kurobeats@yahoo.co.jp
 // CreditCard Finder by freakyclown@gmail.com
-// regex reviewed and revised by Anthony Cozamanis - kurobeats@yahoo.co.jp
 
 function scan(ps, msg, src)
 {

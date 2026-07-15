@@ -1,3 +1,5 @@
+// Lazily crafted by Anthony Cozamanis - kurobeats@yahoo.co.jp
+
 // Cloud platform service tokens & connection strings
 // Adapted from secretsifter Patterns.java
 function scan(ps, msg, src)
