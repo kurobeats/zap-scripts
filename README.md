@@ -109,20 +109,10 @@ All scripts use a common `matchAndAlert()` helper. Every regex is format-anchore
 | `PrivateSSHKeyDiscovery.js` | 1 | Private SSH keys — PEM headers (`BEGIN * PRIVATE KEY`), key filenames (id_rsa, id_ed25519, id_ecdsa_sk, id_xmss), .pem/.ppk/.key extensions |
 | `WebserverInterestingThingDiscovery.js` | 16 | Bearer/Basic auth tokens, Rails master key, secrets.yml, Jetbrains XML, PHP config, .htpasswd, Docker config, .npmrc, WP-config, sftp config |
 
-### Vulnerability detection (2 files)
+### Vulnerability detection (3 files)
 
 | File | Checks | What it finds |
 |------|--------|---------------|
 | `SQLInjectionDetection.js` | 25 | SQL error messages / stack traces — MySQL, PostgreSQL, MSSQL, Access, Oracle, DB2, Informix, Firebird, SQLite, SAP, Sybase, Ingres, Frontbase, HSQLDB, H2, MonetDB, Derby, Vertica, Presto, ClickHouse, CrateDB, Cubrid, Virtuoso, Snowflake, SAP HANA |
 | `Find Credit Cards.js` | 6 | Credit card numbers (Visa, Mastercard, Amex, Discover, Diners, JCB) with Luhn validation, skips binary content types |
 | `UploadFormDiscovery.js` | 1 | HTML file upload forms (`<input type="file">`) |
-
----
-
-## Notes
-
-- All passive scripts use `matchAndAlert(re, idx, conf)` helper — extracts all matches, raises single ZAP alert
-- Confidence: `conf=1` (low) for broad/high-FP patterns, `conf=2` (medium) for format-anchored tokens
-- Zest `.zst` files are plain JSON, not zstd-compressed
-- All scripts carry attribution: `// Lazily crafted by Anthony Cozamanis - kurobeats@yahoo.co.jp`
-- Patterns sourced from [secretsifter Patterns.java](https://github.com/nahamsec/secretsifter) and [sqlmap errors.xml](https://github.com/sqlmapproject/sqlmap)
