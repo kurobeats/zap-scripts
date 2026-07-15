@@ -102,18 +102,18 @@ All scripts use a common `matchAndAlert()` helper. Every regex is format-anchore
 
 | File | Checks | What it finds |
 |------|--------|---------------|
-| `MiscSecretsAndFileDiscovery.js` | 17 | SSH config, .irb_history, GNOME keyring, .netrc, .git-credentials, .gitconfig, Chef .pem, shadow/passwd, .env, sshpass, Firefox logins, KeePass, URLs with creds, DB connection strings |
-| `ShellFileDiscovery.js` | 4 | `.bash_history`, `.zsh_history`, `.bashrc`, `.zshrc`, `.bash_profile`, `.bash_aliases` |
+| `MiscSecretsAndFileDiscovery.js` | 27 | SSH config, .irb_history, GNOME keyring, .netrc, .git-credentials, .gitconfig, Chef .pem, shadow/passwd, .env, sshpass, Firefox logins, KeePass, URLs with creds, DB connection strings, .npmrc, .pypirc, Docker config, .htpasswd, .my.cnf, .s3cfg, AWS CLI creds, kubeconfig, GCP SA keys, Composer auth |
+| `ShellFileDiscovery.js` | 5 | Shell history/config/profile/alias/login files — bash, sh, zsh, ksh, csh, tcsh, fish, dash, ash, mksh, PowerShell + REPL histories (mysql, psql, python, node, redis) |
 | `DatabaseRelatedFileDiscovery.js` | 5 | `.mysql_history`, `.psql_history`, `.pgpass`, DBeaver config, SQL dump files |
-| `InterestingFileDiscovery.js` | 1 | Files with interesting extensions (.pem, .log, .key, .cert, .p12, .sqlite, .kdbx, .yml, .config, archives, documents, backups) |
-| `PrivateSSHKeyDiscovery.js` | 1 | Private SSH keys (`BEGIN * PRIVATE KEY`, PGP blocks) |
+| `InterestingFileDiscovery.js` | 1 | Files with interesting extensions (.pem, .log, .p12, .pfx, .asc, .ovpn, .rdp, .sqlite, .kdbx, archives, backups, certs) |
+| `PrivateSSHKeyDiscovery.js` | 1 | Private SSH keys — PEM headers (`BEGIN * PRIVATE KEY`), key filenames (id_rsa, id_ed25519, id_ecdsa_sk, id_xmss), .pem/.ppk/.key extensions |
 | `WebserverInterestingThingDiscovery.js` | 16 | Bearer/Basic auth tokens, Rails master key, secrets.yml, Jetbrains XML, PHP config, .htpasswd, Docker config, .npmrc, WP-config, sftp config |
 
 ### Vulnerability detection (2 files)
 
 | File | Checks | What it finds |
 |------|--------|---------------|
-| `SQLInjectionDetection.js` | 14 | SQL error messages / stack traces: MySQL, PostgreSQL, MSSQL, Access, Oracle, DB2, Informix, Firebird, SQLite, SAP, Sybase, Ingress, Frontbase, HSQLDB |
+| `SQLInjectionDetection.js` | 25 | SQL error messages / stack traces — MySQL, PostgreSQL, MSSQL, Access, Oracle, DB2, Informix, Firebird, SQLite, SAP, Sybase, Ingres, Frontbase, HSQLDB, H2, MonetDB, Derby, Vertica, Presto, ClickHouse, CrateDB, Cubrid, Virtuoso, Snowflake, SAP HANA |
 | `Find Credit Cards.js` | 6 | Credit card numbers (Visa, Mastercard, Amex, Discover, Diners, JCB) with Luhn validation, skips binary content types |
 | `UploadFormDiscovery.js` | 1 | HTML file upload forms (`<input type="file">`) |
 
@@ -124,3 +124,5 @@ All scripts use a common `matchAndAlert()` helper. Every regex is format-anchore
 - All passive scripts use `matchAndAlert(re, idx, conf)` helper — extracts all matches, raises single ZAP alert
 - Confidence: `conf=1` (low) for broad/high-FP patterns, `conf=2` (medium) for format-anchored tokens
 - Zest `.zst` files are plain JSON, not zstd-compressed
+- All scripts carry attribution: `// Lazily crafted by Anthony Cozamanis - kurobeats@yahoo.co.jp`
+- Patterns sourced from [secretsifter Patterns.java](https://github.com/nahamsec/secretsifter) and [sqlmap errors.xml](https://github.com/sqlmapproject/sqlmap)
