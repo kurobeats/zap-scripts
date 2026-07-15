@@ -10,6 +10,7 @@ function scan(ps, msg, src)
         "GitHub Actions Token Disclosed (script)",
         "GitHub Refresh Token Disclosed (script)",
         "GitHub Fine-Grained PAT Disclosed (script)",
+        "GitHub User Token Disclosed (script)",
         "GitLab PAT Disclosed (script)",
         "GitLab Deploy Token Disclosed (script)",
         "npm Access Token Disclosed (script)",
@@ -27,6 +28,7 @@ function scan(ps, msg, src)
         "A GitHub Actions token was discovered.",
         "A GitHub refresh token was discovered.",
         "A GitHub Fine-Grained PAT was discovered.",
+        "A GitHub User token (ghu_) was discovered.",
         "A GitLab PAT was discovered.",
         "A GitLab Deploy token was discovered.",
         "An npm access token was discovered.",
@@ -56,6 +58,7 @@ function scan(ps, msg, src)
     const ghactions = /\bghs_[A-Za-z0-9]{36}\b/g
     const ghrefresh = /\bghr_[A-Za-z0-9]{76}\b/g
     const ghfinepat = /\bgithub_pat_[A-Za-z0-9_]{82}\b/g
+    const ghuser = /\bghu_[A-Za-z0-9]{36}\b/g
     const gitlabpat = /\bglpat-[A-Za-z0-9\-_]{20}\b/g
     const gitlabdeploy = /\bgldt-[A-Za-z0-9\-_]{20}\b/g
     const npmtoken = /\bnpm_[A-Za-z0-9]{36}\b/g
@@ -72,14 +75,15 @@ function scan(ps, msg, src)
     matchAndAlert(ghactions, 2)
     matchAndAlert(ghrefresh, 3)
     matchAndAlert(ghfinepat, 4)
-    matchAndAlert(gitlabpat, 5)
-    matchAndAlert(gitlabdeploy, 6)
-    matchAndAlert(npmtoken, 7)
-    matchAndAlert(circleci, 8)
-    matchAndAlert(tfcloud, 9)
-    matchAndAlert(pulumi, 10)
-    matchAndAlert(buildkite, 11)
-    matchAndAlert(netlify, 12)
-    matchAndAlert(sentry, 13)
-    matchAndAlert(sonarqube, 14)
+    matchAndAlert(ghuser, 5)
+    matchAndAlert(gitlabpat, 6)
+    matchAndAlert(gitlabdeploy, 7)
+    matchAndAlert(npmtoken, 8)
+    matchAndAlert(circleci, 9)
+    matchAndAlert(tfcloud, 10)
+    matchAndAlert(pulumi, 11)
+    matchAndAlert(buildkite, 12)
+    matchAndAlert(netlify, 13)
+    matchAndAlert(sentry, 14)
+    matchAndAlert(sonarqube, 15)
 }

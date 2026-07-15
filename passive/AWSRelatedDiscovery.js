@@ -20,14 +20,14 @@ function scan(ps, msg, src)
     }
 
     const awsclicreds = /\.?aws\/credentials/g
-    const awsaccesskeyid = /((A3T[A-Z0-9]|AKIA|AGPA|AROA|AIPA|ANPA|ANVA|ASIA)[A-Z0-9]{16}|[A-Z0-9]{20})/g
-    const awsarn = /arn:aws:organizations::\d{12}:account\/o-[a-z0-9]{10,32}\/\d{12}/g
+    const awsaccesskeyid = /(A(BIA|CCA|GPA|I(DA|PA)|KIA|N(PA|VA)|PKA|ROA|S(CA|IA))[A-Z0-9]{16,17}|A3T[A-Z0-9][0-9A-Z]{16})(?![a-zA-Z0-9+/=])/g
+    const awsarn = /arn:aws(-(cn|us-gov|iso-[bcd]))?:[\w/.\-]{1,63}:([\w/.\-]{0,63}:){2}([\w:/.\-]{0,1023})/g
     const awssecretskey = /(?<![A-Za-z0-9/+=])[A-Za-z0-9/+=]{40}(?![A-Za-z0-9/+=])/g
     const awssessiontoken = /(?<![A-Za-z0-9/+=])[A-Za-z0-9/+=]{16,}(?<![A-Za-z0-9/+=])/g
     const awscredfile = /(aws_access_key_id|aws_secret_access_key)(.{0,20})?=.[0-9a-zA-Z\/+]{20,40}/gi
     const amazonmws = /amzn\.mws\.[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/g
     const s3cmdconfig = /\.?s3cfg/g
-    const amazons3url = /(s3\.amazonaws\.com[\/]+|[a-zA-Z0-9_-]*\.s3\.amazonaws\.com)/g
+    const amazons3url = /s3(\.dualstack|-acce(lerate|sspoint))?\.([a-z]{1,8}-[a-z]{1,16}-\d{1,3}\.)?amazonaws\.com/g
 
     // Run all regex checks
 

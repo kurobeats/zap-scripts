@@ -4,8 +4,8 @@ function scan(ps, msg, src)
 {
     const url = msg.getRequestHeader().getURI().toString();
     const body = msg.getResponseBody().toString()
-    const alertTitle = ["DigitalOcean doctl command-line client configuration file Disclosed (script)", "Tugboat DigitalOcean management tool configuration Disclosed (script)", "GitHub Hub command-line client configuration file Disclosed (script)", "Firebase URL Disclosed (script)", "GitHub stuff Disclosed (script)", "Generic Secret Disclosed (script)", "IP Address Disclosed (script)", "Slack Token Disclosed (script)", "Slack Webhook Disclosed (script)", "Outlook Team Webhook Disclosed (script)", "Artifactory stuff Disclosed (script)", "CodeClimate stuff Disclosed (script)", "Sauce Token Disclosed (script)", "Github Key Disclosed (script)", "Heroku Key Disclosed (script)", "Splunk Authorization Disclosed (script)", "Square Access Token Disclosed (script)", "Square OAuth Secret Disclosed (script)", "PayPal/Braintree Access Token Disclosed (script)", "Instagram Access Token Disclosed (script)", "GitHub Access Token in URL Disclosed (script)", "JSON Web Token Disclosed (script)", "Microsoft Teams Webhook URL Disclosed (script)", "GCP OAuth2 Client Secret Disclosed (script)", "GCP Service Account Email Disclosed (script)", "Discord Webhook URL Disclosed (script)", "Generic API Key in Header Disclosed (script)"]
-    const alertDesc = ["A DigitalOcean doctl command-line client configuration file was discovered.", "A Tugboat DigitalOcean management tool configuration was discovered.", "A GitHub Hub command-line client configuration file was discovered.", "A Firebase URL was discovered.", "GitHub stuff was discovered.", "A Generic Secret was discovered.", "An IP Address was discovered.", "A Slack Token was discovered.", "A Slack Webhook was discovered.", "An Outlook Team Webhook was discovered.", "Artifactory stuff was discovered", "CodeClimate stuff was discovered", "A Sauce Token was discovered", "A Github Key was discovered", "A Heroku Key was discovered", "Splunk Authorization was discovered", "A Square Access Token was discovered", "A Square OAuth Secret was discovered", "A PayPal/Braintree Access Token was discovered", "An Instagram access token was discovered.", "A GitHub access token in a URL was discovered.", "A JSON Web Token was discovered.", "A Microsoft Teams webhook URL was discovered.", "A GCP OAuth2 client secret was discovered.", "A GCP service account email was discovered.", "A Discord webhook URL was discovered.", "A generic API key reference (api[key...]) was discovered."]
+    const alertTitle = ["DigitalOcean doctl command-line client configuration file Disclosed (script)", "Tugboat DigitalOcean management tool configuration Disclosed (script)", "GitHub Hub command-line client configuration file Disclosed (script)", "Firebase URL Disclosed (script)", "GitHub stuff Disclosed (script)", "Generic Secret Disclosed (script)", "IP Address Disclosed (script)", "Slack Token Disclosed (script)", "Slack Webhook Disclosed (script)", "Outlook Team Webhook Disclosed (script)", "Artifactory stuff Disclosed (script)", "CodeClimate stuff Disclosed (script)", "Sauce Token Disclosed (script)", "Github Key Disclosed (script)", "Heroku Key Disclosed (script)", "Splunk Authorization Disclosed (script)", "Square Access Token Disclosed (script)", "Square OAuth Secret Disclosed (script)", "PayPal/Braintree Access Token Disclosed (script)", "Instagram Access Token Disclosed (script)", "GitHub Access Token in URL Disclosed (script)", "JSON Web Token Disclosed (script)", "Microsoft Teams Webhook URL Disclosed (script)", "GCP OAuth2 Client Secret Disclosed (script)", "GCP Service Account Email Disclosed (script)", "Discord Webhook URL Disclosed (script)", "Generic API Key in Header Disclosed (script)", "Email Address Disclosed (script)", "Google Cloud Storage URL Disclosed (script)", "Azure Blob Storage URL Disclosed (script)"]
+    const alertDesc = ["A DigitalOcean doctl command-line client configuration file was discovered.", "A Tugboat DigitalOcean management tool configuration was discovered.", "A GitHub Hub command-line client configuration file was discovered.", "A Firebase URL was discovered.", "GitHub stuff was discovered.", "A Generic Secret was discovered.", "An IP Address was discovered.", "A Slack Token was discovered.", "A Slack Webhook was discovered.", "An Outlook Team Webhook was discovered.", "Artifactory stuff was discovered", "CodeClimate stuff was discovered", "A Sauce Token was discovered", "A Github Key was discovered", "A Heroku Key was discovered", "Splunk Authorization was discovered", "A Square Access Token was discovered", "A Square OAuth Secret was discovered", "A PayPal/Braintree Access Token was discovered", "An Instagram access token was discovered.", "A GitHub access token in a URL was discovered.", "A JSON Web Token was discovered.", "A Microsoft Teams webhook URL was discovered.", "A GCP OAuth2 client secret was discovered.", "A GCP service account email was discovered.", "A Discord webhook URL was discovered.", "A generic API key reference (api[key...]) was discovered.", "An email address was discovered.", "A Google Cloud Storage URL was discovered.", "An Azure Blob Storage URL was discovered."]
     const alertSolution = "Ensure API keys, Tokens and configuration files that are publically accessible are not sensitive in nature."
 
     function matchAndAlert(re, idx, conf)
@@ -22,11 +22,11 @@ function scan(ps, msg, src)
     const doctlcliconfig = /(doctl\/config\.yaml)/g
     const dotugboat = /(\.?tugboat)/g
     const githubhub = /(config\/hub)/g
-    const firebaseurl = /([a-z0-9.-]+\.firebaseio\.com)/g
+    const firebaseurl = /([a-z0-9.-]+\.(firebaseio\.com|firebasedatabase\.app))/g
     const githubstuff = /([g|G][i|I][t|T][h|H][u|U][b|B].*['|\"][0-9a-zA-Z]{35,40}['|\"])/g
     const genericsecret = /([s|S][e|E][c|C][r|R][e|E][t|T].*['|\"][0-9a-zA-Z]{32,45}['|\"])/g
     const ipaddress = /([^\.0-9](([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])[^\.0-9])/g
-    const slacktoken = /((xox[pboa]-[0-9]{12}-[0-9]{12}-[0-9]{12}-[a-z0-9]{32}))/g
+    const slacktoken = /(x(ox[psboare]|app)(-[a-zA-Z0-9]{1,64}){1,5})/g
     const slackwebhook = /(https:\/\/hooks\.slack\.com\/services\/T[a-zA-Z0-9_]{8}\/B[a-zA-Z0-9_]{8}\/[a-zA-Z0-9_]{24})/g
     const outlookwebhook = /(https:\/\/outlook\.office\.com\/webhook\/[0-9a-f-]{36}@)/g
     const artifactorystuff = /(artifactory.{0,50}(\"|'|`)?[a-zA-Z0-9=]{112}(\"|'|`)?)/g
@@ -35,7 +35,7 @@ function scan(ps, msg, src)
     const githubkey = /(github(.{0,20})?(\-i)['\"][0-9a-zA-Z]{35,40}['\"])/g
     const herokukey = /(heroku(.{0,20})?['\"][0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}['\"])/g
     const splunkauth = /(Splunk\s(\{){0,1}[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}(\}){0,1})/g
-    const squareaccesstoken = /(sq0atp-[0-9A-Za-z\-_]{22}|EAAA[a-zA-Z0-9]{60})/g
+    const squareaccesstoken = /(sq0(atp|idp)-[0-9A-Za-z\-_]{22,43}|EAAA[a-zA-Z0-9]{60})/g
     const squareoauthsecret = /(sq0csp-[0-9A-Za-z\-_]{43}|sq0[a-z]{3}-[0-9A-Za-z\-_]{22,43})/g
     const paypalaccesstoken = /(access_token\$production\$[0-9a-z]{16}\$[0-9a-f]{32})/g
     const instagramtoken = /([0-9a-fA-F]{7}\.[0-9a-fA-F]{32})/g
@@ -46,6 +46,9 @@ function scan(ps, msg, src)
     const gcpsaemail = /\b[a-z0-9\-]+@[a-z0-9\-]+\.iam\.gserviceaccount\.com\b/g
     const discordwh = /https:\/\/discord(?:app)?\.com\/api\/webhooks\/[0-9]{17,19}\/[A-Za-z0-9_\-]{60,68}/g
     const genericapikey = /(api[key|\s*]+[a-zA-Z0-9_\-]+)/g
+    const emailaddr = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g
+    const gcsurl = /gs:\/\/[a-z\d\-]{3,63}/g
+    const azblob = /blob\.core\.windows\.net/g
 
     // Run all regex checks
 
@@ -76,4 +79,7 @@ function scan(ps, msg, src)
     matchAndAlert(gcpsaemail, 24, 1)
     matchAndAlert(discordwh, 25)
     matchAndAlert(genericapikey, 26, 1)
+    matchAndAlert(emailaddr, 27, 1)
+    matchAndAlert(gcsurl, 28, 1)
+    matchAndAlert(azblob, 29)
 }

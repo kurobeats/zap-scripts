@@ -85,7 +85,7 @@ function scan(ps, msg, src)
     const rubygems = /\brubygems_[a-f0-9]{48}\b/g
     const sendinblue = /\bxkeysib-[a-f0-9]{64}-[A-Za-z0-9]{16}\b/g
     const braintree = /\baccess_token\$(?:production|sandbox)\$[a-f0-9]{16}\$[a-f0-9]{32}\b/g
-    const stripewebhook = /\bwhsec_[A-Za-z0-9]{40}\b/g
+    const stripewebhook = /\bwhsec_[A-Za-z0-9]{32,40}\b/g
     const bcrypt = /\$2[abxy]\$\d{1,2}\$[./A-Za-z0-9]{53}/g
 
     matchAndAlert(discord, 0)
